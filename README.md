@@ -26,6 +26,7 @@ The accompanying schema at [`proto/financial/clearing/v2/novation_event.proto`](
 ### Compile with `protoc`
 ```bash
 protoc -I=proto --python_out=. proto/financial/clearing/v2/novation_event.proto
+```
 
 ## Citation (BibTeX)
 
