@@ -1,0 +1,130 @@
+syntax = "proto3";
+package financial.clearing.v2;
+
+import "google/protobuf/timestamp.proto";
+
+// Top-level message for tracking U.S. Treasury clearing lifecycle commitments.
+message NovationEvent {
+  uint32 schema_version = 1;                       // bump on any breaking change
+  InteroperabilityOrchestrationHeader orchestration_header = 2;
+  AssetDefinition asset_definition = 3;
+  CdmLifecycleEvent cdm_lifecycle_event = 4;
+  DestinationMapping destination_mapping = 5;
+}
+
+// Pod A Ingress pipeline routing middleware parameters.
+message InteroperabilityOrchestrationHeader {
+  bytes request_id = 1;                            // 16 raw bytes (UUIDv4), not 36-char text
+  google.protobuf.Timestamp timestamp = 2;
+  enum MiddlewareMode {
+    MIDDLEWARE_MODE_UNSPECIFIED = 0;
+    MIDDLEWARE_MODE_PROJECT_AGORA_BESU_TO_TERANODE_CORE = 1;
+    MIDDLEWARE_MODE_PROJECT_MBRIDGE_TO_TERANODE_CORE = 2;
+  }
+  MiddlewareMode middleware_mode = 3;
+  enum ComplianceEngine {
+    COMPLIANCE_ENGINE_UNSPECIFIED = 0;
+    COMPLIANCE_ENGINE_TOKENOVATE_NOVAT = 1;
+  }
+  ComplianceEngine compliance_engine = 4;
+}
+
+// Sovereign monetary contract asset configurations (integer minor units).
+message AssetDefinition {
+  enum InstrumentType {
+    INSTRUMENT_TYPE_UNSPECIFIED = 0;
+    INSTRUMENT_TYPE_TREASURY_TRUST_BOND_50YR = 1;
+  }
+  InstrumentType instrument_type = 1;
+  string issuer_lei = 2;                           // 20-char ISO 17442 LEI instead of free text
+  string isin = 3;                                 // or CUSIP; identifies the instrument
+  enum CollateralBacking {
+    COLLATERAL_BACKING_UNSPECIFIED = 0;
+    COLLATERAL_BACKING_PHYSICAL_GOLD_OPTION_AT_MATURITY = 1;
+  }
+  CollateralBacking collateral_backing = 4;
+  // Money as an integer count of the minor unit. Never float/double.
+  int64 notional_minor_units = 5;                  // e.g. cents
+  string currency = 6;                             // ISO 4217, e.g. "USD"
+}
+
+// Common Domain Model (CDM) discrete transaction state transitions.
+message CdmLifecycleEvent {
+  enum EventType {
+    EVENT_TYPE_UNSPECIFIED = 0;
+    EVENT_TYPE_ALLOCATION = 1;                     // one value per discrete CDM state,
+    EVENT_TYPE_NETTING = 2;                        // so the 4x model is one message per state
+    EVENT_TYPE_NOVATION = 3;
+    EVENT_TYPE_SETTLEMENT = 4;
+  }
+  EventType event_type = 1;
+  string clearing_house_lei = 2;
+  string novated_contract_id = 3;
+  uint32 sequence = 4;                             // ordering within the contract's lifecycle
+  bytes previous_event_hash = 5;                   // SHA-256 of prior event's canonical bytes (hash chain)
+}
+
+// Multi-ledger cross-chain storage maps.
+message DestinationMapping {
+  CustodyLane custody_lane = 1;
+  ImmutableDataLedger data_ledger = 2;
+}
+
+// Layer-1 custody balance rails.
+message CustodyLane {
+  enum Network {
+    NETWORK_UNSPECIFIED = 0;
+    NETWORK_STELLAR_PUBLIC = 1;
+    NETWORK_CANTON = 2;
+  }
+  Network network = 1;
+  message ProtocolHook {
+    enum HookType {
+      HOOK_TYPE_UNSPECIFIED = 0;
+      HOOK_TYPE_CAP_35_CLAWBACK_ENABLED = 1;
+      HOOK_TYPE_CAP_33_SPONSORED_RESERVE_LOCK = 2;
+    }
+    HookType hook_type = 1;
+    string asset_code = 2;
+    string sponsor_account_id = 3;
+  }
+  repeated ProtocolHook protocol_hooks = 2;
+}
+
+// Monolithic horizontal validation logging layer.
+message ImmutableDataLedger {
+  enum Network {
+    NETWORK_UNSPECIFIED = 0;
+    NETWORK_BSV_MAINNET = 1;
+    NETWORK_BSV_TESTNET = 2;
+  }
+  Network network = 1;
+  DataPayload data_payload = 2;
+}
+
+// Cryptographically sealed and hash-committed payload envelope.
+message DataPayload {
+  enum ScriptType {
+    SCRIPT_TYPE_UNSPECIFIED = 0;
+    SCRIPT_TYPE_STAS_PERMISSIONED = 1;
+    SCRIPT_TYPE_OP_RETURN_DATA = 2;
+  }
+  ScriptType script_type = 1;
+  bytes institutional_access_identifier = 2;
+  EncryptedBlob sealed_metadata = 3;               // replaces untyped raw_metadata_bytes
+  bytes commitment_sha256 = 4;                     // SHA-256 over canonical 100 KB CDM plaintext
+}
+
+// Explicit AEAD envelope specifying cryptographic masking.
+message EncryptedBlob {
+  enum Algorithm {
+    ALGORITHM_UNSPECIFIED = 0;
+    ALGORITHM_AES_256_GCM = 1;
+    ALGORITHM_CHACHA20_POLY1305 = 2;
+  }
+  Algorithm algorithm = 1;
+  bytes key_id = 2;                                // institutional key ID (BRC-42 derived, KMS, etc.)
+  bytes nonce = 3;                                 // unique per message, never reused with the same key
+  bytes ciphertext = 4;                            // includes the AEAD authentication tag
+  bytes associated_data_hash = 5;                  // binds ciphertext to request_id/event_type
+}
