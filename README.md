@@ -27,6 +27,14 @@ The accompanying schema at [`proto/financial/clearing/v2/novation_event.proto`](
 ```bash
 protoc -I=proto --python_out=. proto/financial/clearing/v2/novation_event.proto
 ```
+### Test Vectors & Reference Verifier
+The [`test-vectors/`](./test-vectors/) directory contains a deterministic 4-step FINOS CDM lifecycle suite (`ALLOCATION` → `NETTING` → `NOVATION` → `SETTLEMENT`) and a standalone Python verifier:
+* **[`test-vectors/novation_lifecycle_vectors.json`](./test-vectors/novation_lifecycle_vectors.json)** — Canonical Proto3 wire hex, per-contract SHA-256 hash chain, and `AES-256-GCM` sealed metadata vectors for contract `CCP-FICC-994012-B`.
+* **[`test-vectors/verify_chain.py`](./test-vectors/verify_chain.py)** — Standalone CLI verifier checking hash-chain continuity across `OP_RETURN_DATA` and `STAS_PERMISSIONED` outputs, deriving per-event CEKs from `key_id`, decrypting `EncryptedBlob`, and verifying `commitment_sha256` against canonical RFC 8785 CDM JSON.
+
+    pip install cryptography protobuf
+    protoc -I=proto --python_out=. proto/financial/clearing/v2/novation_event.proto
+    python3 test-vectors/verify_chain.py
 
 ## Citation (BibTeX)
 
