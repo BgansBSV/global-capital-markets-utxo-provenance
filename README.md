@@ -26,3 +26,22 @@ The accompanying schema at [`proto/financial/clearing/v2/novation_event.proto`](
 ### Compile with `protoc`
 ```bash
 protoc -I=proto --python_out=. proto/financial/clearing/v2/novation_event.proto
+
+## Citation (BibTeX)
+
+    @techreport{bgans2026utxo,
+      author      = {BGANS and BSVANON},
+      title       = {The Institutional Re-Architecting of Global Capital Markets: Data Physics, Regulatory Gravity, and the Inter-Consortium UTXO Provenance Layer},
+      year        = {2026},
+      month       = {November},
+      day         = {26},
+      note        = {Independent Research Paper, Version 21.0},
+      url         = {https://github.com/BgansBSV/global-capital-markets-utxo-provenance}
+    }
+
+---
+
+## Open-Access Distribution & Voluntary Support
+This whitepaper and its accompanying Proto3 wire-compression schema (`financial/clearing/v2/novation_event.proto`) are published 100% open-access under the MIT License. Voluntary BSV tips supporting ongoing updates tracking the 2026–2027 regulatory milestones are appreciated:
+
+* **BSV Tip Address:** `1B7qf6sgA73vg3BzgMRrNAkMUjxZC7SsSj`
